@@ -18,8 +18,8 @@ def dino_tint(on_ground):
 
 
 def on_obstacle_passed(obstacle, score):
-    """Called once, the frame an obstacle finishes scrolling past the dino. Add a sound or a combo counter here."""
-    pass
+    """Called once, the frame an obstacle finishes scrolling past the dino."""
+    return "+1"
 
 
 def max_jumps():
@@ -111,6 +111,8 @@ class Game:
         self.spawn_timer = 0
         self.spawn_interval = 90
         self.state = "wait"
+        self.popup_text = ""
+        self.popup_timer = 0
 
     def start_or_jump(self):
         if self.state == "lose":
@@ -131,11 +133,15 @@ class Game:
             self.spawn_interval = random.randint(55, 110)
 
         hit = False
-        for obs in self.obstacles:
+
+        for obs in self.obstacles: 
             obs.update()
+
             if not obs.passed and obs.rect.right < self.dino.rect.left:
-                obs.passed = True
-                on_obstacle_passed(obs, self.score // 10)
+              obs.passed = True
+              self.popup_text = on_obstacle_passed(obs, self.score // 10)
+              self.popup_timer = 30
+
             if obs.rect.colliderect(self.dino.rect):
                 hit = True
         self.obstacles = [o for o in self.obstacles if not o.is_off_screen()]
@@ -147,6 +153,11 @@ class Game:
                 self.high_score = current
                 save_high_score(self.high_score)
             return
+
+        if self.popup_timer > 0:
+           self.popup_timer -= 1
+        else:
+          self.popup_text = ""
 
         self.score += 1
         if self.score % 300 == 0:
@@ -161,6 +172,9 @@ class Game:
 
         score_surf = self.font.render(f"Score: {self.score // 10}   Best: {self.high_score}", True, (50, 50, 50))
         screen.blit(score_surf, (WIDTH - 260, 20))
+        if self.popup_text:
+           popup_surf = self.font.render(self.popup_text, True, (0, 150, 0))
+           screen.blit(popup_surf, (self.dino.rect.x, self.dino.rect.y - 30))
 
         if self.state == "wait":
             msg = self.big_font.render("Press SPACE to Start", True, (80, 80, 80))
